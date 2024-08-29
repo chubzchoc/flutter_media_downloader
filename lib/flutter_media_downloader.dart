@@ -128,6 +128,123 @@ class MediaDownload {
     }
   }
 
+
+//Download media with auth token
+Future<void> downloadMediaWithToken(BuildContext context, String url,String token,
+      [String? location, String? fileName]) async {
+    await requestPermission();
+    final String pdfUrl = url;
+    final HttpClient httpClient = HttpClient();
+
+    try {
+      final Uri uri = Uri.parse(pdfUrl);
+      final HttpClientRequest request = await httpClient.getUrl(
+        uri,
+      );
+
+    request.headers.addAll("content-type", "application/json")
+    request.headers.addAll("authorization", "Bearer ${token}")
+
+      final HttpClientResponse response = await request.close();
+
+      if (response.statusCode == HttpStatus.ok) {
+        final Uint8List bytes =
+            await consolidateHttpClientResponseBytes(response);
+        final baseStorage = Platform.isAndroid
+            ? await getExternalStorageDirectory()
+            : await getApplicationDocumentsDirectory();
+
+        ///Android Code
+        ///
+        /// Android platform logic is there
+        /// How to file name is given location is fetch everything is mentioned.
+
+        if (Platform.isAndroid) {
+          if (location == null || location == '') {
+            String fileExtension = FileNameFormat().fileNameExtension(url);
+            String nameWithoutExtension =
+                FileNameFormat().fileNameWithOutExtension(url);
+
+            debugPrint('Android fileExtension $fileExtension');
+            debugPrint('Android nameWithoutExtension $nameWithoutExtension');
+            debugPrint(
+                'Android  ${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+            final File file = File(
+                '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+            await file.writeAsBytes(bytes);
+            await downloadFile(
+                url,
+                fileName ?? nameWithoutExtension,
+                '$nameWithoutExtension.$fileExtension',
+                '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+            if (kDebugMode) {
+              print('PDF Downloaded successfully. Path: ${file.path}');
+            }
+          } else {
+            String fileExtension = FileNameFormat().fileNameExtension(url);
+            String nameWithoutExtension =
+                FileNameFormat().fileNameWithOutExtension(url);
+            final File file =
+                File('$location/$nameWithoutExtension.$fileExtension');
+            await file.writeAsBytes(bytes);
+            await downloadFile(
+                url,
+                fileName ?? nameWithoutExtension,
+                nameWithoutExtension,
+                '$location/$nameWithoutExtension.$fileExtension');
+            if (kDebugMode) {
+              print('PDF Downloaded successfully. Path: ${file.path}');
+            }
+          }
+        }
+
+        ///iOS Code
+        ///
+        /// iOS platform logic is there
+        /// How to file name is given location is fetch everything is mentioned.
+
+        else if (Platform.isIOS) {
+          if (location == null || location == '') {
+            Directory documents = await getApplicationDocumentsDirectory();
+            String fileExtension = FileNameFormat().fileNameExtension(url);
+            String nameWithoutExtension =
+                FileNameFormat().fileNameWithOutExtension(url);
+            final File file = File(
+                '${documents.path}/${fileName ?? nameWithoutExtension}.$fileExtension');
+            await file.writeAsBytes(bytes);
+            await showCustomNotification(fileName ?? nameWithoutExtension,
+                fileName ?? nameWithoutExtension);
+            await openMediaFile(file.path);
+            if (kDebugMode) {
+              print('PDF Downloaded successfully. Path: ${file.path}');
+            }
+          } else {
+            String fileExtension = FileNameFormat().fileNameExtension(url);
+            String nameWithoutExtension =
+                FileNameFormat().fileNameWithOutExtension(url);
+            final File file =
+                File('$location/$nameWithoutExtension.$fileExtension');
+            await file.writeAsBytes(bytes);
+            await showCustomNotification(
+                fileName ?? nameWithoutExtension, nameWithoutExtension);
+            await openMediaFile(file.path);
+            if (kDebugMode) {
+              print('PDF Downloaded successfully. Path: ${file.path}');
+            }
+          }
+        } else {
+          debugPrint('Platform Windows');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error: $e');
+      }
+    } finally {
+      httpClient.close();
+    }
+  }
+
   ///downloadFile(Android code)
   ///
   ///This method invokes the notification method from the native side.
