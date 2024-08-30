@@ -142,8 +142,8 @@ Future<void> downloadMediaWithToken(BuildContext context, String url,String toke
         uri,
       );
 
-    // request.headers.add("content-type", "application/json");
-    request.headers.add("authorization", "Bearer ${token}");
+      request.headers.add(HttpHeaders.contentTypeHeader, "application/json");
+      request.headers.add(HttpHeaders.authorizationHeader, "Bearer ${token}");
 
       final HttpClientResponse response = await request.close();
 
